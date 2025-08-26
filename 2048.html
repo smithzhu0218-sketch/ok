@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048数字合成游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .score-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: white;
+        }
+
+        .score-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 0 10px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            width: 400px;
+            height: 400px;
+            margin: 0 auto 20px;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .cell-2 { background: #eee4da; color: #776e65; }
+        .cell-4 { background: #ede0c8; color: #776e65; }
+        .cell-8 { background: #f2b179; color: white; }
+        .cell-16 { background: #f59563; color: white; }
+        .cell-32 { background: #f67c5f; color: white; }
+        .cell-64 { background: #f65e3b; color: white; }
+        .cell-128 { background: #edcf72; color: white; font-size: 1.3em; }
+        .cell-256 { background: #edcc61; color: white; font-size: 1.3em; }
+        .cell-512 { background: #edc850; color: white; font-size: 1.3em; }
+        .cell-1024 { background: #edc53f; color: white; font-size: 1.1em; }
+        .cell-2048 { background: #edc22e; color: white; font-size: 1.1em; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+            color: white;
+            margin-top: 20px;
+        }
+
+        .controls h3 {
+            margin-bottom: 10px;
+        }
+
+        .controls p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .start-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            font-size: 1.5em;
+            border-radius: 20px;
+        }
+
+        .start-menu h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .start-menu button {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 0.8em;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .start-menu button:hover {
+            background: #764ba2;
+        }
+
+        .game-over, .game-won, .pause-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            font-size: 2em;
+        }
+
+        .game-over button, .game-won button, .pause-overlay button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 0.6em;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .game-over button:hover, .game-won button:hover, .pause-overlay button:hover {
+            background: #764ba2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status-indicator {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .instructions strong {
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .game-board {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .cell {
+                font-size: 1.2em;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>2048 数字合成游戏</h1>
+        
+        <div class="status-indicator" id="status-text">
+            按空格键开始游戏
+        </div>
+        
+        <div class="score-container">
+            <div class="score-box">
+                分数: <span id="score">0</span>
+            </div>
+            <div class="score-box">
+                最高分: <span id="best-score">0</span>
+            </div>
+        </div>
+
+        <div class="game-board" id="game-board"></div>
+
+        <div class="instructions">
+            <h3>🎮 游戏说明</h3>
+            <p><strong>空格键</strong> - 开始/暂停/继续游戏</p>
+            <p><strong>方向键</strong> 或 <strong>WASD</strong> - 移动数字</p>
+            <p><strong>P键</strong> - 暂停游戏</p>
+            <p><strong>ESC键</strong> - 重新开始</p>
+            <p>🎯 目标：合成 <strong>2048</strong> 数字！</p>
+        </div>
+
+        <!-- 开始菜单 -->
+        <div id="start-menu" class="start-menu">
+            <h2>🎮 2048 数字合成游戏</h2>
+            <p>使用方向键或WASD控制数字移动</p>
+            <p>将相同的数字合并成更大的数字</p>
+            <button onclick="game.startGame()">开始游戏 (空格键)</button>
+            <button onclick="showInstructions()">游戏说明</button>
+        </div>
+
+        <!-- 游戏结束界面 -->
+        <div id="game-over" class="game-over hidden">
+            <div>😢 游戏结束!</div>
+            <div>最终分数: <span id="final-score">0</span></div>
+            <button onclick="game.restartGame()">重新开始</button>
+        </div>
+
+        <!-- 游戏胜利界面 -->
+        <div id="game-won" class="game-won hidden">
+            <div>🎉 恭喜你赢了!</div>
+            <div>你成功合成了2048!</div>
+            <button onclick="game.continueGame()">继续游戏</button>
+            <button onclick="game.restartGame()">重新开始</button>
+        </div>
+
+        <!-- 暂停界面 -->
+        <div id="pause-overlay" class="pause-overlay hidden">
+            <div>⏸️ 游戏暂停</div>
+            <div>按空格键继续游戏</div>
+            <button onclick="game.resumeGame()">继续游戏</button>
+            <button onclick="game.restartGame()">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        class Game2048 {
+            constructor() {
+                this.board = [];
+                this.score = 0;
+                this.bestScore = localStorage.getItem('best-score') || 0;
+                this.gameState = 'ready'; // ready, playing, paused, gameOver, gameWon
+                this.hasWon = false;
+                
+                this.initializeBoard();
+                this.updateDisplay();
+                this.setupEventListeners();
+                this.showStartMenu();
+            }
+
+            initializeBoard() {
+                this.board = Array(4).fill().map(() => Array(4).fill(0));
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => {
+                    // 阻止空格键滚动页面
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                    }
+                    
+                    switch(this.gameState) {
+                        case 'ready':
+                            if (e.code === 'Space') {
+                                this.startGame();
+                            }
+                            break;
+                        case 'playing':
+                            this.handleKeyPress(e);
+                            break;
+                        case 'paused':
+                            if (e.code === 'Space') {
+                                this.resumeGame();
+                            }
+                            break;
+                        case 'gameOver':
+                        case 'gameWon':
+                            if (e.code === 'Space') {
+                                this.restartGame();
+                            }
+                            break;
+                    }
+                    
+                    // ESC键始终可以重新开始
+                    if (e.code === 'Escape') {
+                        this.restartGame();
+                    }
+                    
+                    // P键暂停
+                    if (e.code === 'KeyP' && this.gameState === 'playing') {
+                        this.pauseGame();
+                    }
+                });
+            }
+
+            handleKeyPress(e) {
+                let moved = false;
+                
+                switch(e.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        e.preventDefault();
+                        moved = this.move('up');
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        e.preventDefault();
+                        moved = this.move('down');
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        e.preventDefault();
+                        moved = this.move('left');
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        e.preventDefault();
+                        moved = this.move('right');
+                        break;
+                }
+                
+                if (moved) {
+                    this.addRandomTile();
+                    this.updateDisplay();
+                    
+                    if (this.checkWin() && !this.hasWon) {
+                        this.hasWon = true;
+                        this.gameState = 'gameWon';
+                        this.showGameWon();
+                    } else if (this.checkGameOver()) {
+                        this.gameState = 'gameOver';
+                        this.showGameOver();
+                    }
+                }
+            }
+
+            showStartMenu() {
+                document.getElementById('start-menu').classList.remove('hidden');
+                document.getElementById('status-text').textContent = '按空格键开始游戏';
+            }
+
+            hideStartMenu() {
+                document.getElementById('start-menu').classList.add('hidden');
+            }
+
+            startGame() {
+                this.hideStartMenu();
+                this.gameState = 'playing';
+                this.initializeBoard();
+                this.score = 0;
+                this.hasWon = false;
+                
+                // 添加初始数字
+                this.addRandomTile();
+                this.addRandomTile();
+                
+                this.updateDisplay();
+                document.getElementById('status-text').textContent = '游戏进行中...';
+            }
+
+            pauseGame() {
+                this.gameState = 'paused';
+                document.getElementById('pause-overlay').classList.remove('hidden');
+                document.getElementById('status-text').textContent = '游戏暂停';
+            }
+
+            resumeGame() {
+                this.gameState = 'playing';
+                document.getElementById('pause-overlay').classList.add('hidden');
+                document.getElementById('status-text').textContent = '游戏进行中...';
+            }
+
+            continueGame() {
+                this.gameState = 'playing';
+                document.getElementById('game-won').classList.add('hidden');
+                document.getElementById('status-text').textContent = '游戏进行中...';
+            }
+
+            showGameOver() {
+                document.getElementById('game-over').classList.remove('hidden');
+                document.getElementById('final-score').textContent = this.score;
+                document.getElementById('status-text').textContent = '游戏结束';
+            }
+
+            showGameWon() {
+                document.getElementById('game-won').classList.remove('hidden');
+                document.getElementById('status-text').textContent = '游戏胜利！';
+            }
+
+            restartGame() {
+                // 隐藏所有覆盖层
+                document.getElementById('game-over').classList.add('hidden');
+                document.getElementById('game-won').classList.add('hidden');
+                document.getElementById('pause-overlay').classList.add('hidden');
+                
+                // 重置游戏状态
+                this.gameState = 'ready';
+                this.hasWon = false;
+                this.score = 0;
+                this.initializeBoard();
+                
+                // 更新显示
+                this.updateDisplay();
+                this.showStartMenu();
+            }
+
+            addRandomTile() {
+                const emptyCells = [];
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        if (this.board[i][j] === 0) {
+                            emptyCells.push({x: i, y: j});
+                        }
+                    }
+                }
+                
+                if (emptyCells.length > 0) {
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    this.board[randomCell.x][randomCell.y] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+
+            move(direction) {
+                let moved = false;
+                const newBoard = this.board.map(row => [...row]);
+                
+                switch(direction) {
+                    case 'left':
+                        for (let i = 0; i < 4; i++) {
+                            const row = newBoard[i].filter(val => val !== 0);
+                            for (let j = 0; j < row.length - 1; j++) {
+                                if (row[j] === row[j + 1]) {
+                                    row[j] *= 2;
+                                    this.score += row[j];
+                                    row.splice(j + 1, 1);
+                                }
+                            }
+                            while (row.length < 4) {
+                                row.push(0);
+                            }
+                            if (JSON.stringify(newBoard[i]) !== JSON.stringify(row)) {
+                                moved = true;
+                            }
+                            newBoard[i] = row;
+                        }
+                        break;
+                        
+                    case 'right':
+                        for (let i = 0; i < 4; i++) {
+                            const row = newBoard[i].filter(val => val !== 0);
+                            for (let j = row.length - 1; j > 0; j--) {
+                                if (row[j] === row[j - 1]) {
+                                    row[j] *= 2;
+                                    this.score += row[j];
+                                    row.splice(j - 1, 1);
+                                    j--;
+                                }
+                            }
+                            while (row.length < 4) {
+                                row.unshift(0);
+                            }
+                            if (JSON.stringify(newBoard[i]) !== JSON.stringify(row)) {
+                                moved = true;
+                            }
+                            newBoard[i] = row;
+                        }
+                        break;
+                        
+                    case 'up':
+                        for (let j = 0; j < 4; j++) {
+                            const column = [];
+                            for (let i = 0; i < 4; i++) {
+                                if (newBoard[i][j] !== 0) {
+                                    column.push(newBoard[i][j]);
+                                }
+                            }
+                            for (let i = 0; i < column.length - 1; i++) {
+                                if (column[i] === column[i + 1]) {
+                                    column[i] *= 2;
+                                    this.score += column[i];
+                                    column.splice(i + 1, 1);
+                                }
+                            }
+                            while (column.length < 4) {
+                                column.push(0);
+                            }
+                            const oldColumn = [];
+                            for (let i = 0; i < 4; i++) {
+                                oldColumn.push(newBoard[i][j]);
+                            }
+                            if (JSON.stringify(oldColumn) !== JSON.stringify(column)) {
+                                moved = true;
+                            }
+                            for (let i = 0; i < 4; i++) {
+                                newBoard[i][j] = column[i];
+                            }
+                        }
+                        break;
+                        
+                    case 'down':
+                        for (let j = 0; j < 4; j++) {
+                            const column = [];
+                            for (let i = 3; i >= 0; i--) {
+                                if (newBoard[i][j] !== 0) {
+                                    column.unshift(newBoard[i][j]);
+                                }
+                            }
+                            for (let i = column.length - 1; i > 0; i--) {
+                                if (column[i] === column[i - 1]) {
+                                    column[i] *= 2;
+                                    this.score += column[i];
+                                    column.splice(i - 1, 1);
+                                    i--;
+                                }
+                            }
+                            while (column.length < 4) {
+                                column.unshift(0);
+                            }
+                            const oldColumn = [];
+                            for (let i = 0; i < 4; i++) {
+                                oldColumn.push(newBoard[i][j]);
+                            }
+                            if (JSON.stringify(oldColumn) !== JSON.stringify(column)) {
+                                moved = true;
+                            }
+                            for (let i = 0; i < 4; i++) {
+                                newBoard[i][j] = column[i];
+                            }
+                        }
+                        break;
+                }
+                
+                if (moved) {
+                    this.board = newBoard;
+                }
+                
+                return moved;
+            }
+
+            checkWin() {
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        if (this.board[i][j] === 2048) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            checkGameOver() {
+                // 检查是否还有空格
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        if (this.board[i][j] === 0) {
+                            return false;
+                        }
+                    }
+                }
+                
+                // 检查是否可以合并
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        if (j < 3 && this.board[i][j] === this.board[i][j + 1]) {
+                            return false;
+                        }
+                        if (i < 3 && this.board[i][j] === this.board[i + 1][j]) {
+                            return false;
+                        }
+                    }
+                }
+                
+                return true;
+            }
+
+            updateDisplay() {
+                const gameBoard = document.getElementById('game-board');
+                gameBoard.innerHTML = '';
+                
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        
+                        const value = this.board[i][j];
+                        if (value !== 0) {
+                            cell.textContent = value;
+                            cell.classList.add(`cell-${value}`);
+                        }
+                        
+                        gameBoard.appendChild(cell);
+                    }
+                }
+                
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('best-score').textContent = this.bestScore;
+                
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('best-score', this.bestScore);
+                }
+            }
+        }
+
+        // 全局函数 - 直接调用游戏实例方法
+        function showInstructions() {
+            alert('游戏说明：\n\n1. 使用方向键或WASD控制数字移动\n2. 相同的数字会合并成更大的数字\n3. 目标是合成2048这个数字\n4. 当格子填满且无法合并时游戏结束\n5. 按空格键开始/暂停/继续游戏\n6. 按ESC键重新开始');
+        }
+
+        // 初始化游戏
+        let game;
+        window.addEventListener('load', () => {
+            game = new Game2048();
+        });
+    </script>
